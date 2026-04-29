@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>차량 위치 기록</title>
+</head>
+<body>
+
+<h2>차량 위치 기록</h2>
+
+<button onclick="addForm()">추가하기</button>
+
+<div id="formArea" style="display:none;">
+  차량번호: <input id="carNumber"><br><br>
+
+  적법/불법:
+  <select id="legal">
+    <option value="적법">적법</option>
+    <option value="불법">불법</option>
+  </select><br><br>
+
+  차종:
+  <select id="type">
+    <option value="승용">승용</option>
+    <option value="화물">화물</option>
+  </select><br><br>
+
+  <button onclick="saveData()">저장하기</button>
+</div>
+
+<!-- ✅ 지도 영역 추가 -->
+<div id="map" style="width:100vw;height:100vh;"></div>
+
+<!-- ✅ 카카오 지도 -->
+ <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d7b065e64cf74ac0b291af43de209b17"></script>
+
+<!-- ✅ supabase 추가 (이거 없으면 에러남) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<!-- ✅ 네 JS -->
+<script src="app.js"></script>
+
+</body>
+</html>
+
+<script>
+  console.log("kakao:", typeof kakao);
+</script>
