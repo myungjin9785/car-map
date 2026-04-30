@@ -33,9 +33,27 @@
       font-size: 14px;
     }
 
+    #loginScreen h2 {
+  font-size: 80px;   /* 크기 키움 */
+  margin: 0;
+  margin-bottom: 20px;
+  position: relative;
+  top: -80px;        /* 위로 이동 */
+}
+
     #loginScreen button {
       width: 240px;
     }
+
+     /* 🔥 여기 아래에 넣으면 됨 */
+  #loginFooter {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 25px;
+    opacity: 0.7;
+  }
 
     /* 🔥 인트로 */
     #intro {
@@ -130,6 +148,9 @@
 
   <!-- 🔥 로그인만 남김 -->
   <button onclick="login()">로그인</button>
+
+    <!-- 🔥 여기 넣으면 됨 -->
+  <div id="loginFooter">Made In MYUNGJIN</div>
 </div>
 
 <!-- 🔥 intro -->

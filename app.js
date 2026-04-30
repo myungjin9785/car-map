@@ -50,11 +50,10 @@ async function initMap() {
 
   mapInitialized = true;
 
-  // 🔥 관리자만 조회 가능
-  if (user.email === ADMIN_EMAIL) {
-    loadMarkers();
+
+  // 🔥 모든 로그인 유저 지도 데이터 조회
+  loadMarkers();
   }
-}
 
 // =========================
 // 📌 저장 (로그인만 하면 가능)
