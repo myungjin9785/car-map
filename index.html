@@ -2,47 +2,253 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>차량 위치 기록</title>
+  <title>Parking Check</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    /* 🔐 로그인 */
+    #loginScreen {
+      position: fixed;
+      top:0; left:0;
+      width:100%; height:100vh;
+      background: black;
+      display:flex;
+      flex-direction:column;
+      justify-content:center;
+      align-items:center;
+      z-index:10000;
+      color:white;
+      gap:10px;
+    }
+
+    #loginScreen input {
+      width: 220px;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 14px;
+    }
+
+    #loginScreen button {
+      width: 240px;
+    }
+
+    /* 🔥 인트로 */
+    #intro {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100vh;
+      background: black;
+      color: white;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 1.5s ease;
+    }
+
+    #intro h1 {
+      font-size: 48px;
+      margin: 0;
+    }
+
+    #intro p {
+      position: absolute;
+      bottom: 30px;
+      font-size: 14px;
+      opacity: 0.7;
+    }
+
+    /* 🔥 상단 UI */
+    #topBar {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      z-index: 10;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      display: none;
+    }
+
+    #title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    input, select {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #333;
+    }
+
+    #map {
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
 </head>
+
 <body>
 
-<h2>차량 위치 기록</h2>
+<!-- 🔐 로그인 화면 -->
+<div id="loginScreen">
+  <h2>Parking Check</h2>
+  <input id="email" placeholder="이메일">
+  <input id="password" type="password" placeholder="비밀번호">
 
-<button onclick="addForm()">추가하기</button>
-
-<div id="formArea" style="display:none;">
-  차량번호: <input id="carNumber"><br><br>
-
-  적법/불법:
-  <select id="legal">
-    <option value="적법">적법</option>
-    <option value="불법">불법</option>
-  </select><br><br>
-
-  차종:
-  <select id="type">
-    <option value="승용">승용</option>
-    <option value="화물">화물</option>
-  </select><br><br>
-
-  <button onclick="saveData()">저장하기</button>
+  <!-- 🔥 로그인만 남김 -->
+  <button onclick="login()">로그인</button>
 </div>
 
-<!-- ✅ 지도 영역 추가 -->
-<div id="map" style="width:100vw;height:100vh;"></div>
+<!-- 🔥 intro -->
+<div id="intro">
+  <h1>Parking Check</h1>
+  <p>Made In MYUNGJIN</p>
+</div>
 
-<!-- ✅ 카카오 지도 -->
- <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d7b065e64cf74ac0b291af43de209b17"></script>
+<!-- 🔥 상단 UI -->
+<div id="topBar">
+  <div id="title">Parking Check</div>
 
-<!-- ✅ supabase 추가 (이거 없으면 에러남) -->
+  <div class="form-row">
+    <input id="inspector" placeholder="조사자명">
+    <input id="carNumber" placeholder="차량번호">
+
+    <select id="district">
+      <option value="">행정구역</option>
+      <option value="북구">북구</option>
+      <option value="서구">서구</option>
+      <option value="남구">남구</option>
+      <option value="중구">중구</option>
+      <option value="달서구">달서구</option>
+      <option value="달성군">달성군</option>
+      <option value="수성구">수성구</option>
+      <option value="동구">동구</option>
+      <option value="군위군">군위군</option>
+    </select>
+
+    <select id="legal">
+      <option value="적법">적법</option>
+      <option value="불법">불법</option>
+    </select>
+
+    <select id="type">
+      <option value="승용">승용</option>
+      <option value="화물">화물</option>
+    </select>
+
+    <button onclick="saveData()">저장</button>
+
+      <!-- 🔥 로그아웃 버튼 추가 -->
+  <button onclick="logout()">로그아웃</button>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<!-- 카카오 -->
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d7b065e64cf74ac0b291af43de209b17&autoload=false"></script>
+
+<!-- supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
-<!-- ✅ 네 JS -->
+<!-- app -->
 <script src="app.js"></script>
+
+<script>
+// =========================
+// 🔐 로그인
+// =========================
+async function login() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+
+  if (!email || !password) {
+    alert("이메일과 비밀번호 입력하세요");
+    return;
+  }
+
+  const { error } = await client.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    alert("로그인 실패");
+    console.error(error);
+  } else {
+    startApp();
+  }
+}
+
+// =========================
+// 🚀 앱 시작
+// =========================
+function startApp() {
+  document.getElementById("loginScreen").style.display = "none";
+
+  const intro = document.getElementById("intro");
+  intro.style.display = "flex";
+
+  setTimeout(() => {
+    intro.style.opacity = "0";
+
+    setTimeout(() => {
+      intro.remove();
+
+      document.getElementById("topBar").style.display = "block";
+
+      kakao.maps.load(function () {
+        if (typeof initMap === "function") {
+          initMap();
+        }
+      });
+
+    }, 1500);
+
+  }, 1000);
+}
+
+// =========================
+// 🔐 자동 로그인
+// =========================
+document.addEventListener("DOMContentLoaded", async () => {
+  const { data: { session } } = await client.auth.getSession();
+
+  if (session) {
+    startApp();
+  }
+});
+</script>
 
 </body>
 </html>
-
-<script>
-  console.log("kakao:", typeof kakao);
-</script>
