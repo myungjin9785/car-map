@@ -13,12 +13,40 @@ let myLocationWatchId = null;
 let blinkState = true;
 
 // =========================
+// 🔐 로그인
+// =========================
+async function login() {
+  const email = document.getElementById("email").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  if (!email || !password) {
+    alert("이메일과 비밀번호를 입력하세요");
+    return;
+  }
+
+  const { data, error } = await client.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  console.log("로그인 응답:", data, error);
+
+  // 🔥 핵심: session 기준으로 판단
+  if (error || !data || !data.session) {
+    alert("이메일과 비밀번호를 다시 확인해 주세요");
+    return;
+  }
+
+  startApp();
+}
+
+// =========================
 // 🔐 유저 가져오기
 // =========================
 async function getUser() {
   const { data: { user }, error } = await client.auth.getUser();
 
-  if (error) {
+  if (error || !user) {
     console.error("유저 가져오기 실패", error);
     return null;
   }
@@ -27,15 +55,36 @@ async function getUser() {
 }
 
 // =========================
-// 📍 내 위치 마커 생성 (중심 이동 포함)
+// 🔐 allowed_users 체크
+// =========================
+async function checkAllowedUser(user) {
+
+  const { data, error } = await client
+    .from("allowed_users")
+    .select("email")
+    .eq("email", user.email)
+    .maybeSingle(); // 🔥 single 대신 안전하게
+
+  if (error || !data) {
+    alert("허용된 사용자만 사용 가능합니다.");
+
+    await client.auth.signOut();
+    location.reload();
+
+    return false;
+  }
+
+  return true;
+}
+
+// =========================
+// 📍 위치
 // =========================
 function updateMyLocation(lat, lng) {
-  const position = new kakao.maps.LatLng(lat, lng);
 
-  // 지도 항상 내 위치 중심
+  const position = new kakao.maps.LatLng(lat, lng);
   map.setCenter(position);
 
-  // 기존 마커 제거
   if (myLocationMarker) {
     myLocationMarker.setMap(null);
   }
@@ -54,7 +103,7 @@ function updateMyLocation(lat, lng) {
 }
 
 // =========================
-// 🔥 실시간 위치 추적 시작
+// 🔥 위치 추적
 // =========================
 function startTracking() {
 
@@ -63,7 +112,6 @@ function startTracking() {
     return;
   }
 
-  // 기존 감시 제거
   if (myLocationWatchId) {
     navigator.geolocation.clearWatch(myLocationWatchId);
   }
@@ -72,42 +120,13 @@ function startTracking() {
     (pos) => {
       updateMyLocation(pos.coords.latitude, pos.coords.longitude);
     },
-    (err) => {
-      console.error("GPS 오류:", err);
-    },
+    (err) => console.error("GPS 오류:", err),
     {
       enableHighAccuracy: true,
       maximumAge: 1000,
       timeout: 10000
     }
   );
-
-  // 🔥 깜빡임 효과 (마커 재생성 방식)
-  setInterval(() => {
-
-    if (!myLocationMarker) return;
-
-    const pos = myLocationMarker.getPosition();
-
-    myLocationMarker.setMap(null);
-
-    if (blinkState) {
-      const imageSrc = "https://cdn-icons-png.flaticon.com/512/64/64113.png";
-      const imageSize = new kakao.maps.Size(30, 30);
-      const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize);
-
-      myLocationMarker = new kakao.maps.Marker({
-        position: pos,
-        image: markerImage,
-        zIndex: 9999
-      });
-
-      myLocationMarker.setMap(map);
-    }
-
-    blinkState = !blinkState;
-
-  }, 600);
 }
 
 // =========================
@@ -121,6 +140,9 @@ async function initMap() {
     return;
   }
 
+  const allowed = await checkAllowedUser(user);
+  if (!allowed) return;
+
   if (mapInitialized) return;
 
   const container = document.getElementById("map");
@@ -132,10 +154,7 @@ async function initMap() {
 
   mapInitialized = true;
 
-  // 🔥 실시간 내 위치 시작
   startTracking();
-
-  // 🔥 기존 마커 로드
   loadMarkers();
 }
 
@@ -162,53 +181,42 @@ async function saveData() {
     return;
   }
 
-  navigator.geolocation.getCurrentPosition(
-    async (pos) => {
+  navigator.geolocation.getCurrentPosition(async (pos) => {
 
-      const newData = {
-        inspector,
-        car_number: carNumber,
-        district,
-        legal,
-        type,
-        lat: pos.coords.latitude,
-        lng: pos.coords.longitude
-      };
+    const newData = {
+      inspector,
+      car_number: carNumber,
+      district,
+      legal,
+      type,
+      lat: pos.coords.latitude,
+      lng: pos.coords.longitude
+    };
 
-      const { error } = await client
-        .from("cars")
-        .insert([newData]);
+    const { error } = await client.from("cars").insert([newData]);
 
-      if (error) {
-        console.error("저장 실패:", error);
-        alert("저장 실패");
-        return;
-      }
-
-      alert("저장 완료");
-
-      addMarker(newData);
-
-      document.getElementById("carNumber").value = "";
-    },
-    (err) => {
-      console.error("GPS 오류:", err);
-      alert("GPS 오류 또는 권한 문제");
+    if (error) {
+      console.error(error);
+      alert("저장 실패");
+      return;
     }
-  );
+
+    alert("저장 완료");
+    addMarker(newData);
+
+    document.getElementById("carNumber").value = "";
+  });
 }
 
 // =========================
-// 📌 전체 마커 로드
+// 📌 마커 로드
 // =========================
 async function loadMarkers() {
 
-  const { data, error } = await client
-    .from("cars")
-    .select("*");
+  const { data, error } = await client.from("cars").select("*");
 
   if (error) {
-    console.error("조회 실패:", error);
+    console.error(error);
     return;
   }
 
@@ -242,16 +250,6 @@ function addMarker(data) {
 
   marker.setMap(map);
   markers.push(marker);
-
-  kakao.maps.event.addListener(marker, () => {
-    alert(
-      `조사자: ${data.inspector}
-차량번호: ${data.car_number}
-행정구역: ${data.district}
-차종: ${data.type}
-상태: ${data.legal}`
-    );
-  });
 }
 
 // =========================
@@ -259,13 +257,7 @@ function addMarker(data) {
 // =========================
 async function logout() {
 
-  const { error } = await client.auth.signOut();
-
-  if (error) {
-    console.error("로그아웃 실패:", error);
-    alert("로그아웃 실패");
-    return;
-  }
+  await client.auth.signOut();
 
   if (myLocationWatchId) {
     navigator.geolocation.clearWatch(myLocationWatchId);
