@@ -9,7 +9,7 @@ let mapInitialized = false;
 let markers = [];
 
 // =========================
-// 🔐 로그인 유저 가져오기
+// 🔐 유저 가져오기
 // =========================
 async function getUser() {
   const { data: { user }, error } = await client.auth.getUser();
@@ -50,13 +50,12 @@ async function initMap() {
 
   mapInitialized = true;
 
-
-  // 🔥 모든 로그인 유저 지도 데이터 조회
+  // 🔥 전체 유저 지도 조회
   loadMarkers();
-  }
+}
 
 // =========================
-// 📌 저장 (로그인만 하면 가능)
+// 📌 저장
 // =========================
 async function saveData() {
 
@@ -73,19 +72,8 @@ async function saveData() {
   const legal = document.getElementById("legal").value;
   const type = document.getElementById("type").value;
 
-  // 🔥 유효성 검사
-  if (!inspector) {
-    alert("조사자명을 입력하세요");
-    return;
-  }
-
-  if (!carNumber) {
-    alert("차량번호를 입력하세요");
-    return;
-  }
-
-  if (!district) {
-    alert("행정구역을 선택하세요");
+  if (!inspector || !carNumber || !district) {
+    alert("필수 항목을 입력하세요");
     return;
   }
 
@@ -97,17 +85,14 @@ async function saveData() {
   navigator.geolocation.getCurrentPosition(
     async (pos) => {
 
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-
       const newData = {
         inspector,
         car_number: carNumber,
         district,
         legal,
         type,
-        lat,
-        lng
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude
       };
 
       const { error } = await client
@@ -115,27 +100,23 @@ async function saveData() {
         .insert([newData]);
 
       if (error) {
-        alert("저장 실패");
         console.error(error);
+        alert("저장 실패");
         return;
       }
 
       alert("저장 완료");
 
-      // 🔥 관리자면 바로 지도 반영
-      if (user.email === ADMIN_EMAIL) {
-        addMarker(newData);
-      }
+      // 🔥 즉시 반영 (전체 유저)
+      addMarker(newData);
 
-      // 🔥 입력값 초기화 (UX 개선)
+      // 입력 초기화
       document.getElementById("carNumber").value = "";
 
     },
     (err) => {
-      if (err.code === 1) alert("위치 권한을 허용해주세요");
-      else if (err.code === 2) alert("위치 정보를 가져올 수 없습니다");
-      else if (err.code === 3) alert("GPS 요청 시간이 초과되었습니다");
-      else alert("GPS 오류 발생");
+      console.error(err);
+      alert("GPS 오류 또는 권한 문제");
     },
     {
       enableHighAccuracy: true,
@@ -146,11 +127,13 @@ async function saveData() {
 }
 
 // =========================
-// 📌 관리자용 전체 조회
+// 📌 전체 마커 로드
 // =========================
 async function loadMarkers() {
 
-  const { data, error } = await client.from("cars").select("*");
+  const { data, error } = await client
+    .from("cars")
+    .select("*");
 
   if (error) {
     console.error("조회 실패", error);
@@ -161,9 +144,7 @@ async function loadMarkers() {
   markers.forEach(m => m.setMap(null));
   markers = [];
 
-  data.forEach((item) => {
-    addMarker(item);
-  });
+  data.forEach(addMarker);
 }
 
 // =========================
@@ -171,7 +152,7 @@ async function loadMarkers() {
 // =========================
 function addMarker(data) {
 
-  if (!map) return; // 🔥 안전장치
+  if (!map) return;
 
   const imageSrc =
     data.legal === "불법"
@@ -181,37 +162,37 @@ function addMarker(data) {
   const imageSize = new kakao.maps.Size(24, 35);
   const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize);
 
-  const position = new kakao.maps.LatLng(data.lat, data.lng);
-
   const marker = new kakao.maps.Marker({
-    position: position,
+    position: new kakao.maps.LatLng(data.lat, data.lng),
     image: markerImage
   });
 
   marker.setMap(map);
   markers.push(marker);
 
-  kakao.maps.event.addListener(marker, function () {
+  kakao.maps.event.addListener(marker, () => {
     alert(
-      "조사자: " + data.inspector +
-      "\n차량번호: " + data.car_number +
-      "\n행정구역: " + data.district +
-      "\n차종: " + data.type +
-      "\n상태: " + data.legal
+      `조사자: ${data.inspector}
+차량번호: ${data.car_number}
+행정구역: ${data.district}
+차종: ${data.type}
+상태: ${data.legal}`
     );
   });
 }
 
+// =========================
 // 🔓 로그아웃
 // =========================
 async function logout() {
+
   const { error } = await client.auth.signOut();
 
   if (error) {
-    alert("로그아웃 실패");
     console.error(error);
+    alert("로그아웃 실패");
     return;
   }
 
-  location.reload(); // 로그인 화면으로 복귀
+  location.reload();
 }

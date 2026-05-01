@@ -2,6 +2,10 @@
 <html>
 <head>
   <meta charset="UTF-8">
+
+  <!-- 🔥 모바일 필수 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Parking Check</title>
 
   <style>
@@ -25,6 +29,15 @@
       gap:10px;
     }
 
+    #loginScreen h2 {
+      font-size: 80px;
+      margin: 0;
+      margin-bottom: 20px;
+      position: relative;
+      top: -60px;
+      text-align: center;
+    }
+
     #loginScreen input {
       width: 220px;
       padding: 10px;
@@ -33,29 +46,22 @@
       font-size: 14px;
     }
 
-    #loginScreen h2 {
-  font-size: 80px;   /* 크기 키움 */
-  margin: 0;
-  margin-bottom: 20px;
-  position: relative;
-  top: -80px;        /* 위로 이동 */
-}
-
     #loginScreen button {
       width: 240px;
     }
 
-     /* 🔥 여기 아래에 넣으면 됨 */
-  #loginFooter {
-    position: absolute;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 25px;
-    opacity: 0.7;
-  }
+    /* 🔥 footer */
+    #loginFooter {
+      position: absolute;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 18px;
+      opacity: 0.7;
+      white-space: nowrap;
+    }
 
-    /* 🔥 인트로 */
+    /* 🔥 intro */
     #intro {
       position: fixed;
       top: 0;
@@ -115,6 +121,8 @@
       font-size: 16px;
       border-radius: 6px;
       border: 1px solid #ccc;
+      flex: 1;
+      min-width: 120px;
     }
 
     button {
@@ -125,6 +133,7 @@
       border: none;
       border-radius: 6px;
       cursor: pointer;
+      min-height: 44px;
     }
 
     button:hover {
@@ -135,21 +144,52 @@
       width: 100vw;
       height: 100vh;
     }
+
+    /* =========================
+       📱 모바일 대응
+    ========================= */
+    @media (max-width: 600px) {
+
+      #loginScreen h2 {
+        font-size: 48px;
+        top: -40px;
+      }
+
+      #loginScreen input,
+      #loginScreen button {
+        width: 85%;
+      }
+
+      #topBar {
+        padding: 10px;
+      }
+
+      .form-row {
+        flex-direction: column;
+      }
+
+      input, select, button {
+        width: 100%;
+      }
+
+      #loginFooter {
+        font-size: 14px;
+      }
+    }
   </style>
 </head>
 
 <body>
 
-<!-- 🔐 로그인 화면 -->
+<!-- 🔐 로그인 -->
 <div id="loginScreen">
   <h2>Parking Check</h2>
+
   <input id="email" placeholder="이메일">
   <input id="password" type="password" placeholder="비밀번호">
 
-  <!-- 🔥 로그인만 남김 -->
   <button onclick="login()">로그인</button>
 
-    <!-- 🔥 여기 넣으면 됨 -->
   <div id="loginFooter">Made In MYUNGJIN</div>
 </div>
 
@@ -191,9 +231,7 @@
     </select>
 
     <button onclick="saveData()">저장</button>
-
-      <!-- 🔥 로그아웃 버튼 추가 -->
-  <button onclick="logout()">로그아웃</button>
+    <button onclick="logout()">로그아웃</button>
   </div>
 </div>
 
@@ -209,9 +247,6 @@
 <script src="app.js"></script>
 
 <script>
-// =========================
-// 🔐 로그인
-// =========================
 async function login() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -231,9 +266,6 @@ async function login() {
   }
 }
 
-// =========================
-// 🚀 앱 시작
-// =========================
 function startApp() {
   document.getElementById("loginScreen").style.display = "none";
 
@@ -245,10 +277,9 @@ function startApp() {
 
     setTimeout(() => {
       intro.remove();
-
       document.getElementById("topBar").style.display = "block";
 
-      kakao.maps.load(function () {
+      kakao.maps.load(() => {
         if (typeof initMap === "function") {
           initMap();
         }
@@ -259,9 +290,6 @@ function startApp() {
   }, 1000);
 }
 
-// =========================
-// 🔐 자동 로그인
-// =========================
 document.addEventListener("DOMContentLoaded", async () => {
   const { data: { session } } = await client.auth.getSession();
 
