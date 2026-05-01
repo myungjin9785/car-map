@@ -14,28 +14,28 @@
       font-family: Arial, sans-serif;
     }
 
-    /* 🔐 로그인 */
+    /* =========================
+       🔐 로그인 화면
+    ========================= */
     #loginScreen {
       position: fixed;
-      top:0; left:0;
-      width:100%; height:100vh;
+      inset: 0;
       background: black;
-      display:flex;
-      flex-direction:column;
-      justify-content:center;
-      align-items:center;
-      z-index:10000;
-      color:white;
-      gap:10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      color: white;
+      gap: 12px;
+      padding: 20px;
     }
 
     #loginScreen h2 {
       font-size: 80px;
       margin: 0;
-      margin-bottom: 20px;
-      position: relative;
-      top: -60px;
       text-align: center;
+      transform: translateY(-40px);
     }
 
     #loginScreen input {
@@ -48,26 +48,25 @@
 
     #loginScreen button {
       width: 240px;
+      min-height: 44px;
     }
 
-    /* 🔥 footer */
     #loginFooter {
       position: absolute;
-      bottom: 30px;
+      bottom: 25px;
       left: 50%;
       transform: translateX(-50%);
-      font-size: 18px;
+      font-size: 16px;
       opacity: 0.7;
       white-space: nowrap;
     }
 
-    /* 🔥 intro */
+    /* =========================
+       🔥 intro
+    ========================= */
     #intro {
       position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100vh;
+      inset: 0;
       background: black;
       color: white;
       display: none;
@@ -90,7 +89,9 @@
       opacity: 0.7;
     }
 
-    /* 🔥 상단 UI */
+    /* =========================
+       🔥 상단 UI
+    ========================= */
     #topBar {
       position: absolute;
       top: 10px;
@@ -152,12 +153,12 @@
 
       #loginScreen h2 {
         font-size: 48px;
-        top: -40px;
+        transform: translateY(-20px);
       }
 
       #loginScreen input,
       #loginScreen button {
-        width: 85%;
+        width: 90%;
       }
 
       #topBar {
@@ -168,7 +169,9 @@
         flex-direction: column;
       }
 
-      input, select, button {
+      #topBar input,
+      #topBar select,
+      #topBar button {
         width: 100%;
       }
 

@@ -37,11 +37,11 @@ async function initMap() {
   if (mapInitialized) return;
 
   if (typeof kakao === "undefined" || !kakao.maps) {
-    console.log("카카오 SDK 아직 안됨");
+    console.log("카카오 SDK 아직 로딩 안됨");
     return;
   }
 
-  const container = document.getElementById('map');
+  const container = document.getElementById("map");
 
   map = new kakao.maps.Map(container, {
     center: new kakao.maps.LatLng(35.8714, 128.6014),
@@ -50,7 +50,6 @@ async function initMap() {
 
   mapInitialized = true;
 
-  // 🔥 전체 유저 지도 조회
   loadMarkers();
 }
 
@@ -100,14 +99,14 @@ async function saveData() {
         .insert([newData]);
 
       if (error) {
-        console.error(error);
+        console.error("저장 실패:", error);
         alert("저장 실패");
         return;
       }
 
       alert("저장 완료");
 
-      // 🔥 즉시 반영 (전체 유저)
+      // 🔥 즉시 지도 반영
       addMarker(newData);
 
       // 입력 초기화
@@ -115,7 +114,7 @@ async function saveData() {
 
     },
     (err) => {
-      console.error(err);
+      console.error("GPS 오류:", err);
       alert("GPS 오류 또는 권한 문제");
     },
     {
@@ -136,7 +135,7 @@ async function loadMarkers() {
     .select("*");
 
   if (error) {
-    console.error("조회 실패", error);
+    console.error("조회 실패:", error);
     return;
   }
 
@@ -162,8 +161,10 @@ function addMarker(data) {
   const imageSize = new kakao.maps.Size(24, 35);
   const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize);
 
+  const position = new kakao.maps.LatLng(data.lat, data.lng);
+
   const marker = new kakao.maps.Marker({
-    position: new kakao.maps.LatLng(data.lat, data.lng),
+    position,
     image: markerImage
   });
 
@@ -189,7 +190,7 @@ async function logout() {
   const { error } = await client.auth.signOut();
 
   if (error) {
-    console.error(error);
+    console.error("로그아웃 실패:", error);
     alert("로그아웃 실패");
     return;
   }
