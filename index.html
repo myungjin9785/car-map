@@ -37,7 +37,7 @@
       transform: translateY(-40px);
     }
 
-    /* 🔥 여기 핵심 수정 */
+    /* 🔥 로그인 input만 완전 고정 (핵심) */
     #loginScreen input {
       width: 240px;
       padding: 10px;
@@ -45,6 +45,8 @@
       border: none;
       font-size: 14px;
       box-sizing: border-box;
+      flex: none;
+      min-width: unset;
     }
 
     #loginScreen button {
@@ -118,7 +120,9 @@
       flex-wrap: wrap;
     }
 
-    input, select {
+    /* 🔥 지도 UI input만 적용 */
+    #topBar input,
+    #topBar select {
       padding: 10px;
       font-size: 16px;
       border-radius: 6px;
@@ -237,6 +241,7 @@
 
 <div id="map"></div>
 
+<!-- 외부 라이브러리 -->
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d7b065e64cf74ac0b291af43de209b17&autoload=false"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="app.js"></script>
