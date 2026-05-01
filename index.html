@@ -2,7 +2,6 @@
 <html>
 <head>
   <meta charset="UTF-8">
-
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Parking Check</title>
@@ -14,7 +13,7 @@
     }
 
     /* =========================
-       🔐 로그인 화면
+       🔐 로그인
     ========================= */
     #loginScreen {
       position: fixed;
@@ -33,20 +32,15 @@
     #loginScreen h2 {
       font-size: 80px;
       margin: 0;
-      text-align: center;
       transform: translateY(-40px);
     }
 
-    /* 🔥 로그인 input만 완전 고정 (핵심) */
     #loginScreen input {
       width: 240px;
       padding: 10px;
       border-radius: 6px;
       border: none;
       font-size: 14px;
-      box-sizing: border-box;
-      flex: none;
-      min-width: unset;
     }
 
     #loginScreen button {
@@ -61,7 +55,6 @@
       transform: translateX(-50%);
       font-size: 16px;
       opacity: 0.7;
-      white-space: nowrap;
     }
 
     /* =========================
@@ -93,7 +86,7 @@
     }
 
     /* =========================
-       🔥 상단 UI
+       🔥 상단 UI (데스크탑 기본)
     ========================= */
     #topBar {
       position: absolute;
@@ -120,7 +113,6 @@
       flex-wrap: wrap;
     }
 
-    /* 🔥 지도 UI input만 적용 */
     #topBar input,
     #topBar select {
       padding: 10px;
@@ -142,18 +134,27 @@
       min-height: 44px;
     }
 
-    button:hover {
-      background: #333;
-    }
-
     #map {
       width: 100vw;
       height: 100vh;
     }
 
     /* =========================
-       📱 모바일 대응
+       📱 모바일: 접기 기능
     ========================= */
+    #toggleBar {
+      display: none;
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 20;
+      background: black;
+      color: white;
+      border: none;
+      padding: 10px 12px;
+      border-radius: 8px;
+    }
+
     @media (max-width: 600px) {
 
       #loginScreen h2 {
@@ -166,6 +167,26 @@
         width: 90%;
       }
 
+      /* 🔥 모바일에서는 기본 접힌 상태 */
+      #topBar {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        border-radius: 0;
+        max-height: 60px;
+        overflow: hidden;
+        transition: 0.3s ease;
+      }
+
+      #topBar.open {
+        max-height: 500px;
+      }
+
+      #toggleBar {
+        display: block;
+      }
+
       .form-row {
         flex-direction: column;
       }
@@ -174,10 +195,6 @@
       #topBar select,
       #topBar button {
         width: 100%;
-      }
-
-      #loginFooter {
-        font-size: 14px;
       }
     }
   </style>
@@ -188,12 +205,9 @@
 <!-- 🔐 로그인 -->
 <div id="loginScreen">
   <h2>Parking Check</h2>
-
   <input id="email" placeholder="이메일">
   <input id="password" type="password" placeholder="비밀번호">
-
   <button onclick="login()">로그인</button>
-
   <div id="loginFooter">Made In MYUNGJIN</div>
 </div>
 
@@ -202,6 +216,9 @@
   <h1>Parking Check</h1>
   <p>Made In MYUNGJIN</p>
 </div>
+
+<!-- 🔥 모바일 토글 버튼 -->
+<button id="toggleBar" onclick="toggleBar()">☰</button>
 
 <!-- 🔥 상단 UI -->
 <div id="topBar">
@@ -241,12 +258,16 @@
 
 <div id="map"></div>
 
-<!-- 외부 라이브러리 -->
+<!-- 카카오 / supabase -->
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d7b065e64cf74ac0b291af43de209b17&autoload=false"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="app.js"></script>
 
 <script>
+function toggleBar() {
+  document.getElementById("topBar").classList.toggle("open");
+}
+
 async function login() {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
@@ -258,11 +279,7 @@ async function login() {
 
   const { error } = await client.auth.signInWithPassword({ email, password });
 
-  if (error) {
-    alert("로그인 실패");
-  } else {
-    startApp();
-  }
+  if (!error) startApp();
 }
 
 function startApp() {
@@ -289,7 +306,6 @@ function startApp() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   const { data: { session } } = await client.auth.getSession();
-
   if (session) startApp();
 });
 </script>

@@ -10,8 +10,7 @@ let markers = [];
 
 let myLocationMarker = null;
 let myLocationWatchId = null;
-let blinkInterval = null;
-let isBlinkVisible = true;
+let blinkState = true;
 
 // =========================
 // 🔐 유저 가져오기
@@ -28,10 +27,13 @@ async function getUser() {
 }
 
 // =========================
-// 📍 내 위치 마커 생성
+// 📍 내 위치 마커 생성 (중심 이동 포함)
 // =========================
-function createMyMarker(lat, lng) {
+function updateMyLocation(lat, lng) {
   const position = new kakao.maps.LatLng(lat, lng);
+
+  // 지도 항상 내 위치 중심
+  map.setCenter(position);
 
   // 기존 마커 제거
   if (myLocationMarker) {
@@ -39,7 +41,7 @@ function createMyMarker(lat, lng) {
   }
 
   const imageSrc = "https://cdn-icons-png.flaticon.com/512/64/64113.png";
-  const imageSize = new kakao.maps.Size(28, 28);
+  const imageSize = new kakao.maps.Size(30, 30);
   const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize);
 
   myLocationMarker = new kakao.maps.Marker({
@@ -49,35 +51,29 @@ function createMyMarker(lat, lng) {
   });
 
   myLocationMarker.setMap(map);
-
-  map.setCenter(position);
 }
 
 // =========================
 // 🔥 실시간 위치 추적 시작
 // =========================
-function startTrackingMyLocation() {
+function startTracking() {
 
   if (!navigator.geolocation) {
     alert("GPS 지원 안됨");
     return;
   }
 
-  // 기존 감시 제거 (중복 방지)
+  // 기존 감시 제거
   if (myLocationWatchId) {
     navigator.geolocation.clearWatch(myLocationWatchId);
   }
 
   myLocationWatchId = navigator.geolocation.watchPosition(
     (pos) => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
-
-      createMyMarker(lat, lng);
-
+      updateMyLocation(pos.coords.latitude, pos.coords.longitude);
     },
     (err) => {
-      console.error("위치 추적 실패:", err);
+      console.error("GPS 오류:", err);
     },
     {
       enableHighAccuracy: true,
@@ -86,22 +82,32 @@ function startTrackingMyLocation() {
     }
   );
 
-  // 🔥 깜빡임 (1번만 실행)
-  if (!blinkInterval) {
-    blinkInterval = setInterval(() => {
+  // 🔥 깜빡임 효과 (마커 재생성 방식)
+  setInterval(() => {
 
-      if (!myLocationMarker) return;
+    if (!myLocationMarker) return;
 
-      const markerElement = myLocationMarker.getContent?.();
+    const pos = myLocationMarker.getPosition();
 
-      // 카카오 마커는 DOM 직접 접근이 제한적이라 opacity 대신 toggle 방식
-      if (myLocationMarker.getVisible) {
-        isBlinkVisible = !isBlinkVisible;
-        myLocationMarker.setVisible(isBlinkVisible);
-      }
+    myLocationMarker.setMap(null);
 
-    }, 600);
-  }
+    if (blinkState) {
+      const imageSrc = "https://cdn-icons-png.flaticon.com/512/64/64113.png";
+      const imageSize = new kakao.maps.Size(30, 30);
+      const markerImage = new kakao.maps.MarkerImage(imageSrc, imageSize);
+
+      myLocationMarker = new kakao.maps.Marker({
+        position: pos,
+        image: markerImage,
+        zIndex: 9999
+      });
+
+      myLocationMarker.setMap(map);
+    }
+
+    blinkState = !blinkState;
+
+  }, 600);
 }
 
 // =========================
@@ -126,10 +132,10 @@ async function initMap() {
 
   mapInitialized = true;
 
-  // 🔥 내 위치 추적 시작
-  startTrackingMyLocation();
+  // 🔥 실시간 내 위치 시작
+  startTracking();
 
-  // 🔥 기존 데이터 로드
+  // 🔥 기존 마커 로드
   loadMarkers();
 }
 
@@ -261,13 +267,8 @@ async function logout() {
     return;
   }
 
-  // 🔥 위치 추적 정리
   if (myLocationWatchId) {
     navigator.geolocation.clearWatch(myLocationWatchId);
-  }
-
-  if (blinkInterval) {
-    clearInterval(blinkInterval);
   }
 
   location.reload();
