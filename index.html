@@ -86,7 +86,7 @@
     }
 
     /* =========================
-       🔥 상단 UI (데스크탑 기본)
+       🔥 상단 UI (데스크탑)
     ========================= */
     #topBar {
       position: absolute;
@@ -140,7 +140,7 @@
     }
 
     /* =========================
-       📱 모바일: 접기 기능
+       📱 모바일 개선 (핵심 수정)
     ========================= */
     #toggleBar {
       display: none;
@@ -167,27 +167,34 @@
         width: 90%;
       }
 
-      /* 🔥 모바일에서는 기본 접힌 상태 */
+      #toggleBar {
+        display: block;
+      }
+
+      /* 🔥 접힌 상태 */
       #topBar {
         position: absolute;
         top: 0;
         left: 0;
         right: 0;
         border-radius: 0;
-        max-height: 60px;
         overflow: hidden;
+        max-height: 60px;
         transition: 0.3s ease;
       }
 
+      /* 🔥 핵심: 기본 숨김 */
+      #topBar .form-row {
+        display: none;
+      }
+
+      /* 🔥 열렸을 때 */
       #topBar.open {
-        max-height: 500px;
+        max-height: 600px;
       }
 
-      #toggleBar {
-        display: block;
-      }
-
-      .form-row {
+      #topBar.open .form-row {
+        display: flex;
         flex-direction: column;
       }
 
@@ -217,7 +224,7 @@
   <p>Made In MYUNGJIN</p>
 </div>
 
-<!-- 🔥 모바일 토글 버튼 -->
+<!-- 🔥 모바일 토글 -->
 <button id="toggleBar" onclick="toggleBar()">☰</button>
 
 <!-- 🔥 상단 UI -->
@@ -258,7 +265,7 @@
 
 <div id="map"></div>
 
-<!-- 카카오 / supabase -->
+<!-- scripts -->
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d7b065e64cf74ac0b291af43de209b17&autoload=false"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 <script src="app.js"></script>
