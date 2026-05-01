@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
 
-  <!-- 🔥 모바일 필수 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Parking Check</title>
@@ -27,7 +26,7 @@
       align-items: center;
       z-index: 10000;
       color: white;
-      gap: 12px;
+      gap: 10px;
       padding: 20px;
     }
 
@@ -38,12 +37,14 @@
       transform: translateY(-40px);
     }
 
+    /* 🔥 여기 핵심 수정 */
     #loginScreen input {
-      width: 220px;
+      width: 240px;
       padding: 10px;
       border-radius: 6px;
       border: none;
       font-size: 14px;
+      box-sizing: border-box;
     }
 
     #loginScreen button {
@@ -161,10 +162,6 @@
         width: 90%;
       }
 
-      #topBar {
-        padding: 10px;
-      }
-
       .form-row {
         flex-direction: column;
       }
@@ -240,13 +237,8 @@
 
 <div id="map"></div>
 
-<!-- 카카오 -->
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d7b065e64cf74ac0b291af43de209b17&autoload=false"></script>
-
-<!-- supabase -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
-
-<!-- app -->
 <script src="app.js"></script>
 
 <script>
@@ -263,7 +255,6 @@ async function login() {
 
   if (error) {
     alert("로그인 실패");
-    console.error(error);
   } else {
     startApp();
   }
@@ -283,9 +274,7 @@ function startApp() {
       document.getElementById("topBar").style.display = "block";
 
       kakao.maps.load(() => {
-        if (typeof initMap === "function") {
-          initMap();
-        }
+        if (typeof initMap === "function") initMap();
       });
 
     }, 1500);
@@ -296,9 +285,7 @@ function startApp() {
 document.addEventListener("DOMContentLoaded", async () => {
   const { data: { session } } = await client.auth.getSession();
 
-  if (session) {
-    startApp();
-  }
+  if (session) startApp();
 });
 </script>
 
