@@ -132,7 +132,43 @@ function getStableLocation(lat, lng) {
 }
 
 // =========================
-// 📍 위치 표시
+// 🔵 500m 원
+// =========================
+function drawRadiusCircle(lat, lng) {
+  if (radiusCircle) radiusCircle.setMap(null);
+
+  radiusCircle = new kakao.maps.Circle({
+    center: new kakao.maps.LatLng(lat, lng),
+    radius: 500,
+    strokeWeight: 2,
+    strokeColor: '#007BFF',
+    fillColor: '#007BFF',
+    fillOpacity: 0.15
+  });
+
+  radiusCircle.setMap(map);
+}
+
+// =========================
+// 🟢 정확도 원
+// =========================
+function drawAccuracyCircle(lat, lng, accuracy) {
+  if (accuracyCircle) accuracyCircle.setMap(null);
+
+  accuracyCircle = new kakao.maps.Circle({
+    center: new kakao.maps.LatLng(lat, lng),
+    radius: accuracy,
+    strokeWeight: 1,
+    strokeColor: '#00C853',
+    fillColor: '#00C853',
+    fillOpacity: 0.1
+  });
+
+  accuracyCircle.setMap(map);
+}
+
+// =========================
+// 📍 위치 표시 (🔥 반경 포함)
 // =========================
 function updateMyLocation(lat, lng, accuracy) {
   const pos = new kakao.maps.LatLng(lat, lng);
@@ -142,6 +178,10 @@ function updateMyLocation(lat, lng, accuracy) {
 
   myLocationMarker = new kakao.maps.Marker({ position: pos });
   myLocationMarker.setMap(map);
+
+  // 🔥 핵심 복구
+  drawRadiusCircle(lat, lng);
+  drawAccuracyCircle(lat, lng, accuracy);
 }
 
 // =========================
@@ -224,7 +264,6 @@ async function initMap() {
   mapInitialized = true;
   startTracking();
 
-  // 🔥 데스크탑에서만 클릭 저장 허용
   if (!isMobile()) {
     kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
 
@@ -258,14 +297,12 @@ async function saveData() {
     return;
   }
 
-  // 🔥 데스크탑 클릭 우선
   if (!isMobile() && selectedLat && selectedLng) {
     insertData(selectedLat, selectedLng);
     resetClick();
     return;
   }
 
-  // 🔥 모바일 GPS만 사용
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       insertData(pos.coords.latitude, pos.coords.longitude);
