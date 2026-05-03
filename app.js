@@ -22,6 +22,11 @@ let selectedLat = null;
 let selectedLng = null;
 let selectedMarker = null;
 
+// 🔥 모바일 체크
+function isMobile() {
+  return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
 // =========================
 // 🔐 로그인
 // =========================
@@ -41,12 +46,10 @@ async function login() {
     return;
   }
 
-  const user = data.user;
-
   const { data: allowedUser } = await client
     .from("allowed_users")
     .select("email")
-    .ilike("email", user.email)
+    .ilike("email", data.user.email)
     .maybeSingle();
 
   if (!allowedUser) {
@@ -62,8 +65,7 @@ async function login() {
 // 🔐 유저 가져오기
 // =========================
 async function getUser() {
-  const { data: { user }, error } = await client.auth.getUser();
-  if (error || !user) return null;
+  const { data: { user } } = await client.auth.getUser();
   return user;
 }
 
@@ -83,10 +85,7 @@ function startApp() {
       intro.remove();
       document.getElementById("topBar").style.display = "block";
 
-      kakao.maps.load(() => {
-        initMap();
-      });
-
+      kakao.maps.load(() => initMap());
     }, 1500);
   }, 1000);
 }
@@ -133,42 +132,6 @@ function getStableLocation(lat, lng) {
 }
 
 // =========================
-// 🔵 500m 원
-// =========================
-function drawRadiusCircle(lat, lng) {
-  if (radiusCircle) radiusCircle.setMap(null);
-
-  radiusCircle = new kakao.maps.Circle({
-    center: new kakao.maps.LatLng(lat, lng),
-    radius: 500,
-    strokeWeight: 2,
-    strokeColor: '#007BFF',
-    fillColor: '#007BFF',
-    fillOpacity: 0.15
-  });
-
-  radiusCircle.setMap(map);
-}
-
-// =========================
-// 🟢 정확도 원
-// =========================
-function drawAccuracyCircle(lat, lng, accuracy) {
-  if (accuracyCircle) accuracyCircle.setMap(null);
-
-  accuracyCircle = new kakao.maps.Circle({
-    center: new kakao.maps.LatLng(lat, lng),
-    radius: accuracy,
-    strokeWeight: 1,
-    strokeColor: '#00C853',
-    fillColor: '#00C853',
-    fillOpacity: 0.1
-  });
-
-  accuracyCircle.setMap(map);
-}
-
-// =========================
 // 📍 위치 표시
 // =========================
 function updateMyLocation(lat, lng, accuracy) {
@@ -179,9 +142,6 @@ function updateMyLocation(lat, lng, accuracy) {
 
   myLocationMarker = new kakao.maps.Marker({ position: pos });
   myLocationMarker.setMap(map);
-
-  drawRadiusCircle(lat, lng);
-  drawAccuracyCircle(lat, lng, accuracy);
 }
 
 // =========================
@@ -196,15 +156,13 @@ async function loadMarkersNearby(lat, lng) {
 
   lastLoadLocation = { lat, lng };
 
-  const { data, error } = await client
+  const { data } = await client
     .from("cars")
     .select("*")
     .gte("lat", lat - 0.005)
     .lte("lat", lat + 0.005)
     .gte("lng", lng - 0.005)
     .lte("lng", lng + 0.005);
-
-  if (error) return;
 
   markers.forEach(m => m.setMap(null));
   markers = [];
@@ -227,7 +185,7 @@ function startTracking() {
       if (!firstFix) {
         firstFix = true;
       } else {
-        if (accuracy > 100) return; // 🔥 정확도 개선
+        if (accuracy > 100) return;
       }
 
       const stable = getStableLocation(
@@ -239,7 +197,7 @@ function startTracking() {
       loadMarkersNearby(stable.lat, stable.lng);
 
     },
-    () => console.log("GPS 사용 불가 (데스크탑 가능성)"),
+    () => console.log("GPS 없음 (데스크탑)"),
     {
       enableHighAccuracy: true,
       maximumAge: 0,
@@ -266,56 +224,54 @@ async function initMap() {
   mapInitialized = true;
   startTracking();
 
-  // 🔥 데스크탑 클릭 저장 + 시각화
-  kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
+  // 🔥 데스크탑에서만 클릭 저장 허용
+  if (!isMobile()) {
+    kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
 
-    selectedLat = mouseEvent.latLng.getLat();
-    selectedLng = mouseEvent.latLng.getLng();
+      selectedLat = mouseEvent.latLng.getLat();
+      selectedLng = mouseEvent.latLng.getLng();
 
-    if (selectedMarker) selectedMarker.setMap(null);
+      if (selectedMarker) selectedMarker.setMap(null);
 
-    selectedMarker = new kakao.maps.Marker({
-      position: mouseEvent.latLng
+      selectedMarker = new kakao.maps.Marker({
+        position: mouseEvent.latLng
+      });
+
+      selectedMarker.setMap(map);
+
+      alert("클릭 위치 저장됨");
     });
-
-    selectedMarker.setMap(map);
-
-    alert("클릭 위치 저장됨");
-  });
+  }
 }
 
 // =========================
-// 📌 저장 (🔥 핵심)
+// 📌 저장
 // =========================
 async function saveData() {
-
-  const user = await getUser();
-  if (!user) return;
 
   const inspector = document.getElementById("inspector").value.trim();
   const carNumber = document.getElementById("carNumber").value.trim();
   const district = document.getElementById("district").value;
-  const legal = document.getElementById("legal").value;
-  const type = document.getElementById("type").value;
 
   if (!inspector || !carNumber || !district) {
     alert("필수 항목 입력");
     return;
   }
 
-  // 🔥 1순위: 클릭 좌표
-  if (selectedLat && selectedLng) {
+  // 🔥 데스크탑 클릭 우선
+  if (!isMobile() && selectedLat && selectedLng) {
     insertData(selectedLat, selectedLng);
+    resetClick();
     return;
   }
 
-  // 🔥 2순위: GPS
+  // 🔥 모바일 GPS만 사용
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       insertData(pos.coords.latitude, pos.coords.longitude);
     },
     () => {
-      alert("위치 못 가져옴 → 지도 클릭 사용");
+      alert("위치 못 가져옴");
     }
   );
 }
@@ -345,6 +301,19 @@ async function insertData(lat, lng) {
   alert("저장 완료");
 
   loadMarkersNearby(lat, lng);
+}
+
+// =========================
+// 🔥 클릭 초기화
+// =========================
+function resetClick() {
+  selectedLat = null;
+  selectedLng = null;
+
+  if (selectedMarker) {
+    selectedMarker.setMap(null);
+    selectedMarker = null;
+  }
 }
 
 // =========================
