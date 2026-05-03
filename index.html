@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
   <title>Parking Check</title>
 
   <style>
@@ -12,9 +11,6 @@
       font-family: Arial, sans-serif;
     }
 
-    /* =========================
-       🔐 로그인
-    ========================= */
     #loginScreen {
       position: fixed;
       inset: 0;
@@ -57,9 +53,6 @@
       opacity: 0.7;
     }
 
-    /* =========================
-       🔥 intro
-    ========================= */
     #intro {
       position: fixed;
       inset: 0;
@@ -85,9 +78,6 @@
       opacity: 0.7;
     }
 
-    /* =========================
-       🔥 상단 UI (데스크탑)
-    ========================= */
     #topBar {
       position: absolute;
       top: 10px;
@@ -139,9 +129,6 @@
       height: 100vh;
     }
 
-    /* =========================
-       📱 모바일 개선 (핵심 수정)
-    ========================= */
     #toggleBar {
       display: none;
       position: absolute;
@@ -156,7 +143,6 @@
     }
 
     @media (max-width: 600px) {
-
       #loginScreen h2 {
         font-size: 48px;
         transform: translateY(-20px);
@@ -171,7 +157,6 @@
         display: block;
       }
 
-      /* 🔥 접힌 상태 */
       #topBar {
         position: absolute;
         top: 0;
@@ -183,12 +168,10 @@
         transition: 0.3s ease;
       }
 
-      /* 🔥 핵심: 기본 숨김 */
       #topBar .form-row {
         display: none;
       }
 
-      /* 🔥 열렸을 때 */
       #topBar.open {
         max-height: 600px;
       }
@@ -209,7 +192,6 @@
 
 <body>
 
-<!-- 🔐 로그인 -->
 <div id="loginScreen">
   <h2>Parking Check</h2>
   <input id="email" placeholder="이메일">
@@ -218,16 +200,13 @@
   <div id="loginFooter">Made By MYUNGJIN</div>
 </div>
 
-<!-- 🔥 intro -->
 <div id="intro">
   <h1>Parking Check</h1>
   <p>Made By MYUNGJIN</p>
 </div>
 
-<!-- 🔥 모바일 토글 -->
 <button id="toggleBar" onclick="toggleBar()">☰</button>
 
-<!-- 🔥 상단 UI -->
 <div id="topBar">
   <div id="title">Parking Check</div>
 
@@ -274,47 +253,6 @@
 function toggleBar() {
   document.getElementById("topBar").classList.toggle("open");
 }
-
-async function login() {
-  const email = document.getElementById("email").value;
-  const password = document.getElementById("password").value;
-
-  if (!email || !password) {
-    alert("이메일과 비밀번호 입력하세요");
-    return;
-  }
-
-  const { error } = await client.auth.signInWithPassword({ email, password });
-
-  if (!error) startApp();
-}
-
-function startApp() {
-  document.getElementById("loginScreen").style.display = "none";
-
-  const intro = document.getElementById("intro");
-  intro.style.display = "flex";
-
-  setTimeout(() => {
-    intro.style.opacity = "0";
-
-    setTimeout(() => {
-      intro.remove();
-      document.getElementById("topBar").style.display = "block";
-
-      kakao.maps.load(() => {
-        if (typeof initMap === "function") initMap();
-      });
-
-    }, 1500);
-
-  }, 1000);
-}
-
-document.addEventListener("DOMContentLoaded", async () => {
-  const { data: { session } } = await client.auth.getSession();
-  if (session) startApp();
-});
 </script>
 
 </body>
