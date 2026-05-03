@@ -185,7 +185,7 @@ function updateMyLocation(lat, lng, accuracy) {
 }
 
 // =========================
-// 마커 로드 (🔥 핵심 수정)
+// 마커 로드
 // =========================
 async function loadMarkersNearby(lat, lng) {
 
@@ -209,8 +209,6 @@ async function loadMarkersNearby(lat, lng) {
   markers = [];
 
   if (!data) return;
-
-  console.log("DB 데이터:", data);
 
   data
     .filter(d => d.lat != null && d.lng != null)
@@ -271,9 +269,7 @@ async function initMap() {
 
   mapInitialized = true;
 
-  // 🔥 추가 (GPS 없어도 마커 보이게 하는 핵심)
   loadMarkersNearby(35.8714, 128.6014);
-
   startTracking();
 
   if (!isMobile()) {
@@ -289,8 +285,6 @@ async function initMap() {
       });
 
       selectedMarker.setMap(map);
-
-      console.log("선택 좌표:", selectedLat, selectedLng);
     });
   }
 }
@@ -309,7 +303,7 @@ async function saveData() {
     return;
   }
 
-  if (!isMobile() && selectedLat && selectedLng) {
+  if (!isMobile() && selectedLat != null && selectedLng != null) {
     insertData(selectedLat, selectedLng);
     resetClick();
     return;
@@ -319,37 +313,55 @@ async function saveData() {
     (pos) => {
       insertData(pos.coords.latitude, pos.coords.longitude);
     },
-    () => alert("위치 못 가져옴")
+    (err) => {
+      console.error(err);
+      alert("위치 못 가져옴");
+    }
   );
 }
 
 // =========================
-// DB 저장
+// DB 저장 (🔥 핵심 수정본)
 // =========================
 async function insertData(lat, lng) {
 
-  const newData = {
-    inspector: document.getElementById("inspector").value.trim(),
-    car_number: document.getElementById("carNumber").value.trim(),
-    district: document.getElementById("district").value,
-    legal: document.getElementById("legal").value,
-    type: document.getElementById("type").value,
-    lat: Number(lat),
-    lng: Number(lng)
-  };
+  try {
+    const user = await getUser();
 
-  console.log("저장:", newData);
+    if (!user) {
+      alert("로그인 필요");
+      return;
+    }
 
-  const { error } = await client.from("cars").insert([newData]);
+    const newData = {
+      inspector: document.getElementById("inspector").value.trim(),
+      car_number: document.getElementById("carNumber").value.trim(),
+      district: document.getElementById("district").value,
+      legal: document.getElementById("legal").value,
+      type: document.getElementById("type").value,
+      lat: Number(lat),
+      lng: Number(lng),
+      user_email: user.email
+    };
 
-  if (error) {
-    alert("저장 실패: " + error.message);
-    console.error(error);
-    return;
+    const { data, error } = await client
+      .from("cars")
+      .insert([newData])
+      .select();
+
+    if (error) {
+      console.error("저장 실패:", error);
+      alert("저장 실패: " + error.message);
+      return;
+    }
+
+    alert("저장 완료");
+    loadMarkersNearby(lat, lng);
+
+  } catch (err) {
+    console.error(err);
+    alert("오류 발생: " + err.message);
   }
-
-  alert("저장 완료");
-  loadMarkersNearby(lat, lng);
 }
 
 // =========================
