@@ -10,7 +10,11 @@ let markers = [];
 
 let myLocationMarker = null;
 let myLocationWatchId = null;
-let radiusCircle = null; // 🔥 원 추가
+let radiusCircle = null;
+let accuracyCircle = null;
+
+// 🔥 위치 안정화 버퍼
+let locationBuffer = [];
 
 // =========================
 // 🔐 로그인
@@ -107,33 +111,69 @@ function getDistance(lat1, lng1, lat2, lng2) {
 }
 
 // =========================
-// 🔵 500m 원 그리기
+// 🔥 위치 안정화 (평균)
+// =========================
+function getStableLocation(lat, lng) {
+  locationBuffer.push({ lat, lng });
+
+  if (locationBuffer.length > 5) {
+    locationBuffer.shift();
+  }
+
+  const avgLat = locationBuffer.reduce((sum, p) => sum + p.lat, 0) / locationBuffer.length;
+  const avgLng = locationBuffer.reduce((sum, p) => sum + p.lng, 0) / locationBuffer.length;
+
+  return { lat: avgLat, lng: avgLng };
+}
+
+// =========================
+// 🔵 500m 원
 // =========================
 function drawRadiusCircle(lat, lng) {
 
   const center = new kakao.maps.LatLng(lat, lng);
 
-  if (radiusCircle) {
-    radiusCircle.setMap(null);
-  }
+  if (radiusCircle) radiusCircle.setMap(null);
 
   radiusCircle = new kakao.maps.Circle({
-    center: center,
+    center,
     radius: 500,
     strokeWeight: 2,
     strokeColor: '#007BFF',
     strokeOpacity: 0.8,
     fillColor: '#007BFF',
-    fillOpacity: 0.2
+    fillOpacity: 0.15
   });
 
   radiusCircle.setMap(map);
 }
 
 // =========================
+// 🟢 GPS 정확도 원
+// =========================
+function drawAccuracyCircle(lat, lng, accuracy) {
+
+  const center = new kakao.maps.LatLng(lat, lng);
+
+  if (accuracyCircle) accuracyCircle.setMap(null);
+
+  accuracyCircle = new kakao.maps.Circle({
+    center,
+    radius: accuracy,
+    strokeWeight: 1,
+    strokeColor: '#00C853',
+    strokeOpacity: 0.6,
+    fillColor: '#00C853',
+    fillOpacity: 0.1
+  });
+
+  accuracyCircle.setMap(map);
+}
+
+// =========================
 // 📍 위치 표시
 // =========================
-function updateMyLocation(lat, lng) {
+function updateMyLocation(lat, lng, accuracy) {
 
   const position = new kakao.maps.LatLng(lat, lng);
   map.setCenter(position);
@@ -147,7 +187,8 @@ function updateMyLocation(lat, lng) {
 
   myLocationMarker.setMap(map);
 
-  drawRadiusCircle(lat, lng); // 🔥 핵심
+  drawRadiusCircle(lat, lng);
+  drawAccuracyCircle(lat, lng, accuracy);
 }
 
 // =========================
@@ -166,10 +207,7 @@ async function loadMarkersNearby(lat, lng) {
     .gte("lng", lng - range)
     .lte("lng", lng + range);
 
-  if (error) {
-    console.error(error);
-    return;
-  }
+  if (error) return;
 
   markers.forEach(m => m.setMap(null));
   markers = [];
@@ -182,20 +220,37 @@ async function loadMarkersNearby(lat, lng) {
 }
 
 // =========================
-// 🔥 위치 추적
+// 🔥 위치 추적 (핵심)
 // =========================
 function startTracking() {
 
   myLocationWatchId = navigator.geolocation.watchPosition(
     (pos) => {
-      const lat = pos.coords.latitude;
-      const lng = pos.coords.longitude;
 
-      updateMyLocation(lat, lng);
-      loadMarkersNearby(lat, lng);
+      const accuracy = pos.coords.accuracy;
+
+      // ❌ 정확도 필터
+      if (accuracy > 50) {
+        console.log("정확도 낮음:", accuracy);
+        return;
+      }
+
+      const rawLat = pos.coords.latitude;
+      const rawLng = pos.coords.longitude;
+
+      // 🔥 안정화
+      const stable = getStableLocation(rawLat, rawLng);
+
+      updateMyLocation(stable.lat, stable.lng, accuracy);
+      loadMarkersNearby(stable.lat, stable.lng);
+
     },
     (err) => console.error(err),
-    { enableHighAccuracy: true }
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10000
+    }
   );
 }
 
