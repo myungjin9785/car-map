@@ -271,6 +271,9 @@ async function initMap() {
 
   mapInitialized = true;
 
+  // 🔥 추가 (GPS 없어도 마커 보이게 하는 핵심)
+  loadMarkersNearby(35.8714, 128.6014);
+
   startTracking();
 
   if (!isMobile()) {

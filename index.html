@@ -73,9 +73,7 @@
       border-radius: 8px;
     }
 
-    /* =========================
-       📱 모바일 최적화 (핵심 수정)
-    ========================= */
+    /* 🔥 모바일 UI */
     @media (max-width: 600px) {
 
       #toggleBar {
@@ -90,7 +88,6 @@
         overflow: hidden;
         max-height: 60px;
         transition: 0.3s ease;
-        padding: 10px;
       }
 
       #topBar .form-row {
@@ -104,17 +101,12 @@
       #topBar.open .form-row {
         display: flex;
         flex-direction: column;
-        gap: 6px;
       }
 
-      /* 🔥 입력창 커짐 해결 */
       #topBar input,
       #topBar select,
       #topBar button {
         width: 100%;
-        min-width: unset;   /* 핵심 */
-        font-size: 14px;
-        padding: 8px;
       }
     }
 
@@ -135,7 +127,7 @@
   <h1>Parking Check</h1>
 </div>
 
-<!-- 🔥 모바일 토글 -->
+<!-- 🔥 모바일 토글 버튼 -->
 <button id="toggleBar" onclick="toggleBar()">☰</button>
 
 <div id="topBar">
