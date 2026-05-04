@@ -359,8 +359,7 @@ async function insertData(lat, lng) {
       legal: document.getElementById("legal").value,
       type: document.getElementById("type").value,
       lat: Number(lat),
-      lng: Number(lng),
-      user_email: user.email
+      lng: Number(lng)
     };
 
     const { error } = await client
