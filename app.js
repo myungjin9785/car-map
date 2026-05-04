@@ -8,6 +8,8 @@ let map;
 let mapInitialized = false;
 let appStarted = false;
 let markers = [];
+let districtPolygons = [];
+let districtLabels = [];
 
 let myLocationMarker = null;
 let myLocationWatchId = null;
@@ -30,6 +32,21 @@ let currentLng = null;
 // =========================
 const AUTO_LOGOUT_MS = 10 * 60 * 1000;
 const LOGIN_TIME_KEY = "carCheckLoginTime";
+const DISTRICT_GEOJSON_URL = "data/districts.geojson";
+
+const DAEGU_DISTRICT_NAMES = {
+  "27110": "중구",
+  "27140": "동구",
+  "27170": "서구",
+  "27200": "남구",
+  "27230": "북구",
+  "27260": "수성구",
+  "27290": "달서구",
+  "27710": "달성군",
+  "27720": "군위군",
+  "47720": "군위군"
+};
+
 let autoLogoutTimer = null;
 
 function clearAutoLogoutTimer() {
@@ -253,6 +270,14 @@ function updateMyLocation(lat, lng, accuracy) {
 }
 
 // =========================
+// 마커 초기화
+// =========================
+function clearMarkers() {
+  markers.forEach(marker => marker.setMap(null));
+  markers = [];
+}
+
+// =========================
 // 마커 로드
 // =========================
 async function loadMarkersNearby(lat, lng, force = false) {
@@ -272,8 +297,7 @@ async function loadMarkersNearby(lat, lng, force = false) {
     return;
   }
 
-  markers.forEach(marker => marker.setMap(null));
-  markers = [];
+  clearMarkers();
 
   if (!data) return;
 
@@ -286,6 +310,210 @@ async function loadMarkersNearby(lat, lng, force = false) {
     }))
     .filter(item => getDistance(lat, lng, item.lat, item.lng) <= 500)
     .forEach(addMarker);
+}
+
+// =========================
+// 행정구역 조회
+// =========================
+async function loadDistrictMarkers() {
+  if (isMobile()) return;
+
+  const district = document.getElementById("district").value;
+
+  if (!district) {
+    alert("행정구역을 선택하세요");
+    return;
+  }
+
+  const { data, error } = await client
+    .from("cars")
+    .select("*")
+    .eq("district", district);
+
+  if (error) {
+    console.error("DB error:", error);
+    alert("조회 실패: " + error.message);
+    return;
+  }
+
+  clearMarkers();
+
+  const list = (data || [])
+    .filter(item => item.lat && item.lng)
+    .map(item => ({
+      ...item,
+      lat: Number(item.lat),
+      lng: Number(item.lng)
+    }));
+
+  if (list.length === 0) {
+    alert("조회된 데이터가 없습니다");
+    return;
+  }
+
+  const bounds = new kakao.maps.LatLngBounds();
+
+  list.forEach(item => {
+    addMarker(item);
+    bounds.extend(new kakao.maps.LatLng(item.lat, item.lng));
+  });
+
+  if (list.length === 1) {
+    map.setCenter(new kakao.maps.LatLng(list[0].lat, list[0].lng));
+    map.setLevel(5);
+  } else {
+    map.setBounds(bounds);
+  }
+}
+
+// =========================
+// 행정구역 폴리곤
+// =========================
+function getDistrictName(properties = {}) {
+  const sigCode = String(properties.SIG_CD || "").trim();
+
+  if (DAEGU_DISTRICT_NAMES[sigCode]) {
+    return DAEGU_DISTRICT_NAMES[sigCode];
+  }
+
+  const rawName =
+    properties.SIG_KOR_NM ||
+    properties.SGG_NM ||
+    properties.ADM_NM ||
+    properties.adm_nm ||
+    properties.name ||
+    properties.NAME ||
+    properties.CTP_KOR_NM ||
+    "";
+
+  const name = String(rawName).trim();
+
+  if (!name) return "";
+
+  const parts = name.split(" ");
+  return parts[parts.length - 1];
+}
+
+function getPolygonRings(geometry) {
+  if (!geometry) return [];
+
+  if (geometry.type === "Polygon") {
+    return [geometry.coordinates[0]];
+  }
+
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates.map(polygon => polygon[0]);
+  }
+
+  return [];
+}
+
+function getRingCenter(ring) {
+  let latSum = 0;
+  let lngSum = 0;
+  let count = 0;
+
+  ring.forEach(coord => {
+    const lng = Number(coord[0]);
+    const lat = Number(coord[1]);
+
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+    latSum += lat;
+    lngSum += lng;
+    count += 1;
+  });
+
+  if (!count) return null;
+
+  return new kakao.maps.LatLng(latSum / count, lngSum / count);
+}
+
+async function loadDistrictPolygons() {
+  try {
+    const response = await fetch(DISTRICT_GEOJSON_URL);
+
+    if (!response.ok) {
+      throw new Error("GeoJSON 파일을 불러오지 못했습니다");
+    }
+
+    const geojson = await response.json();
+
+    if (!geojson.features) return;
+
+    const bounds = new kakao.maps.LatLngBounds();
+
+    geojson.features.forEach(feature => {
+      const sigCode = String(feature.properties?.SIG_CD || "").trim();
+
+      if (!DAEGU_DISTRICT_NAMES[sigCode]) return;
+
+      const districtName = getDistrictName(feature.properties);
+      const rings = getPolygonRings(feature.geometry);
+
+      rings.forEach(ring => {
+        const path = ring
+          .map(coord => {
+            const lng = Number(coord[0]);
+            const lat = Number(coord[1]);
+
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+            bounds.extend(new kakao.maps.LatLng(lat, lng));
+            return new kakao.maps.LatLng(lat, lng);
+          })
+          .filter(Boolean);
+
+        if (path.length < 3) return;
+
+        const polygon = new kakao.maps.Polygon({
+          path,
+          strokeWeight: 2,
+          strokeColor: "#111111",
+          strokeOpacity: 0.8,
+          fillColor: "#007BFF",
+          fillOpacity: 0.08
+        });
+
+        polygon.setMap(map);
+        districtPolygons.push(polygon);
+      });
+
+      if (districtName && rings[0]) {
+        const center = getRingCenter(rings[0]);
+
+        if (center) {
+          const label = new kakao.maps.CustomOverlay({
+            position: center,
+            content: `<div style="
+              padding: 4px 8px;
+              background: rgba(255,255,255,0.9);
+              border: 1px solid rgba(0,0,0,0.25);
+              border-radius: 6px;
+              color: #111;
+              font-size: 14px;
+              font-weight: 700;
+              white-space: nowrap;
+              box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            ">${districtName}</div>`,
+            xAnchor: 0.5,
+            yAnchor: 0.5,
+            zIndex: 5
+          });
+
+          label.setMap(map);
+          districtLabels.push(label);
+        }
+      }
+    });
+
+    if (districtPolygons.length > 0) {
+      map.setBounds(bounds);
+    }
+  } catch (err) {
+    console.error(err);
+    alert("행정구역 경계 데이터를 불러오지 못했습니다");
+  }
 }
 
 // =========================
@@ -338,22 +566,11 @@ async function initMap() {
 
   mapInitialized = true;
 
-  loadMarkersNearby(35.8714, 128.6014, true);
-  startTracking();
-
-  if (!isMobile()) {
-    kakao.maps.event.addListener(map, "click", function(mouseEvent) {
-      selectedLat = mouseEvent.latLng.getLat();
-      selectedLng = mouseEvent.latLng.getLng();
-
-      if (selectedMarker) selectedMarker.setMap(null);
-
-      selectedMarker = new kakao.maps.Marker({
-        position: mouseEvent.latLng
-      });
-
-      selectedMarker.setMap(map);
-    });
+  if (isMobile()) {
+    loadMarkersNearby(35.8714, 128.6014, true);
+    startTracking();
+  } else {
+    loadDistrictPolygons();
   }
 }
 
@@ -361,18 +578,14 @@ async function initMap() {
 // 저장
 // =========================
 async function saveData() {
+  if (!isMobile()) return;
+
   const inspector = document.getElementById("inspector").value.trim();
   const carNumber = document.getElementById("carNumber").value.trim();
   const district = document.getElementById("district").value;
 
   if (!inspector || !carNumber || !district) {
     alert("조사자명, 차량번호, 행정구역은 필수입니다");
-    return;
-  }
-
-  if (!isMobile() && selectedLat !== null && selectedLng !== null) {
-    await insertData(selectedLat, selectedLng);
-    resetClick();
     return;
   }
 

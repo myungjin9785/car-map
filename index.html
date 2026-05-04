@@ -133,10 +133,10 @@
     }
 
     .my-location-dot {
-      width: 14px;
-      height: 14px;
+      width: 4px;
+      height: 4px;
       background: black;
-      border: 2px solid white;
+      border: 1px solid white;
       border-radius: 50%;
       box-shadow: 0 0 0 2px rgba(0,0,0,0.25);
       animation: blinkLocation 1s infinite ease-in-out;
@@ -180,7 +180,23 @@
       line-height: 44px;
     }
 
+    .mobile-only {
+      display: none;
+    }
+
+    .desktop-only {
+      display: inline-block;
+    }
+
     @media (max-width: 600px) {
+      .mobile-only {
+        display: block;
+      }
+
+      .desktop-only {
+        display: none;
+      }
+
       #mobileHeader {
         display: flex;
         position: absolute;
@@ -254,6 +270,7 @@
   <div id="topBar">
     <div class="form-row">
       <input
+        class="mobile-only"
         id="inspector"
         type="text"
         inputmode="text"
@@ -266,6 +283,7 @@
       >
 
       <input
+        class="mobile-only"
         id="carNumber"
         type="text"
         inputmode="text"
@@ -285,21 +303,23 @@
         <option value="중구">중구</option>
         <option value="달서구">달서구</option>
         <option value="달성군">달성군</option>
+        <option value="군위군">군위군</option>
         <option value="수성구">수성구</option>
         <option value="동구">동구</option>
       </select>
 
-      <select id="legal">
+      <select class="mobile-only" id="legal">
         <option value="적법">적법</option>
         <option value="불법">불법</option>
       </select>
 
-      <select id="type">
+      <select class="mobile-only" id="type">
         <option value="승용">승용</option>
         <option value="화물">화물</option>
       </select>
 
-      <button type="button" onclick="saveData()">저장</button>
+      <button class="desktop-only" type="button" onclick="loadDistrictMarkers()">조회</button>
+      <button class="mobile-only" type="button" onclick="saveData()">저장</button>
       <button type="button" onclick="logout()">로그아웃</button>
     </div>
   </div>
