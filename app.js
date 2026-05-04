@@ -417,8 +417,8 @@ function addMarker(data) {
 
   const imageSrc =
     legal === "불법"
-      ? "images/red.png"
-      : "images/blue.png";
+      ? "images/redpoint.png"
+      : "images/bluepoint.png";
 
   const markerImage = new kakao.maps.MarkerImage(
     imageSrc,
