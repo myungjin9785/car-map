@@ -104,6 +104,13 @@
       background: white;
     }
 
+    #topBar input {
+      -webkit-user-select: text;
+      user-select: text;
+      -webkit-touch-callout: default;
+      ime-mode: active;
+    }
+
     button {
       padding: 10px 16px;
       font-size: 16px;
@@ -198,8 +205,29 @@
 
   <div id="topBar">
     <div class="form-row">
-      <input id="inspector" placeholder="조사자명" autocomplete="off" spellcheck="false">
-      <input id="carNumber" placeholder="차량번호" autocomplete="off" spellcheck="false">
+      <input
+        id="inspector"
+        type="text"
+        inputmode="text"
+        lang="ko"
+        placeholder="조사자명"
+        autocomplete="name"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+      >
+
+      <input
+        id="carNumber"
+        type="text"
+        inputmode="text"
+        lang="ko"
+        placeholder="차량번호"
+        autocomplete="off"
+        autocapitalize="off"
+        autocorrect="off"
+        spellcheck="false"
+      >
 
       <select id="district">
         <option value="">행정구역</option>
