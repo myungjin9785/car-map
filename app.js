@@ -189,9 +189,10 @@ function updateMyLocation(lat, lng, accuracy) {
 // =========================
 async function loadMarkersNearby(lat, lng) {
 
+  // 너무 자주 호출 방지
   if (lastLoadLocation) {
     const dist = getDistance(lat, lng, lastLoadLocation.lat, lastLoadLocation.lng);
-    if (dist < 20) return;
+    if (dist < 30) return;
   }
 
   lastLoadLocation = { lat, lng };
@@ -211,13 +212,14 @@ async function loadMarkersNearby(lat, lng) {
   if (!data) return;
 
   data
-    .filter(d => d.lat != null && d.lng != null)
+    .filter(d => d.lat && d.lng)
     .map(d => ({
       ...d,
       lat: Number(d.lat),
       lng: Number(d.lng)
     }))
-    .filter(d => getDistance(lat, lng, d.lat, d.lng) <= 500)
+    // 👉 필요하면 주석 해제 (500m 필터)
+    //.filter(d => getDistance(lat, lng, d.lat, d.lng) <= 500)
     .forEach(addMarker);
 }
 
@@ -234,7 +236,7 @@ function startTracking() {
       const accuracy = pos.coords.accuracy;
 
       if (!firstFix) firstFix = true;
-      else if (accuracy > 100) return;
+      else if (accuracy > 120) return;
 
       const stable = getStableLocation(
         pos.coords.latitude,
@@ -321,7 +323,7 @@ async function saveData() {
 }
 
 // =========================
-// DB 저장 (🔥 핵심 수정본)
+// DB 저장
 // =========================
 async function insertData(lat, lng) {
 
@@ -344,13 +346,12 @@ async function insertData(lat, lng) {
       user_email: user.email
     };
 
-    const { data, error } = await client
+    const { error } = await client
       .from("cars")
-      .insert([newData])
-      .select();
+      .insert([newData]);
 
     if (error) {
-      console.error("저장 실패:", error);
+      console.error(error);
       alert("저장 실패: " + error.message);
       return;
     }
@@ -360,12 +361,12 @@ async function insertData(lat, lng) {
 
   } catch (err) {
     console.error(err);
-    alert("오류 발생: " + err.message);
+    alert("오류: " + err.message);
   }
 }
 
 // =========================
-// 클릭 초기화
+// 초기화
 // =========================
 function resetClick() {
   selectedLat = null;
@@ -382,15 +383,13 @@ function resetClick() {
 // =========================
 function addMarker(data) {
 
-  if (!data.lat || !data.lng) return;
-
   const imageSrc =
     data.legal === "불법"
       ? "/images/red.png"
       : "/images/blue.png";
 
   const marker = new kakao.maps.Marker({
-    position: new kakao.maps.LatLng(Number(data.lat), Number(data.lng)),
+    position: new kakao.maps.LatLng(data.lat, data.lng),
     image: new kakao.maps.MarkerImage(imageSrc, new kakao.maps.Size(24, 35))
   });
 

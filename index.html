@@ -6,60 +6,126 @@
   <title>Parking Check</title>
 
   <style>
-    body { margin: 0; font-family: Arial, sans-serif; }
-
-    #loginScreen {
-      position: fixed; inset: 0; background: black;
-      display: flex; flex-direction: column; justify-content: center; align-items: center;
-      z-index: 10000; color: white; gap: 10px; padding: 20px;
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
     }
 
-    #loginScreen h2 { font-size: 80px; margin: 0; transform: translateY(-40px); }
+    /* =========================
+      로그인
+    ========================= */
+    #loginScreen {
+      position: fixed;
+      inset: 0;
+      background: black;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      color: white;
+      gap: 10px;
+      padding: 20px;
+    }
+
+    #loginScreen h2 {
+      font-size: 80px;
+      margin: 0;
+      transform: translateY(-40px);
+    }
 
     #loginScreen input {
-      width: 240px; padding: 10px; border-radius: 6px;
-      border: none; font-size: 14px;
+      width: 240px;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      font-size: 14px;
     }
 
-    #loginScreen button { width: 240px; min-height: 44px; }
+    #loginScreen button {
+      width: 240px;
+      min-height: 44px;
+    }
 
     #loginFooter {
-      position: absolute; bottom: 25px; left: 50%;
+      position: absolute;
+      bottom: 25px;
+      left: 50%;
       transform: translateX(-50%);
-      font-size: 16px; opacity: 0.7;
+      font-size: 16px;
+      opacity: 0.7;
     }
 
+    /* =========================
+      인트로
+    ========================= */
     #intro {
-      position: fixed; inset: 0; background: black; color: white;
-      display: none; flex-direction: column; justify-content: center; align-items: center;
-      z-index: 9999; transition: opacity 1.5s ease;
+      position: fixed;
+      inset: 0;
+      background: black;
+      color: white;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 1.5s ease;
     }
 
+    /* =========================
+      상단 바
+    ========================= */
     #topBar {
-      position: absolute; top: 10px; left: 10px; right: 10px;
-      background: white; padding: 15px; border-radius: 10px;
-      z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      z-index: 10;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
       display: none;
     }
 
-    .form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .form-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
 
-    #topBar input, #topBar select {
-      padding: 10px; font-size: 16px;
-      border-radius: 6px; border: 1px solid #ccc;
-      flex: 1; min-width: 120px;
+    #topBar input,
+    #topBar select {
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      flex: 1;
+      min-width: 120px;
     }
 
     button {
-      padding: 10px 20px; font-size: 16px;
-      background: black; color: white;
-      border: none; border-radius: 6px;
-      cursor: pointer; min-height: 44px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: black;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      min-height: 44px;
     }
 
-    #map { width: 100vw; height: 100vh; }
+    /* =========================
+      지도
+    ========================= */
+    #map {
+      width: 100vw;
+      height: 100vh;
+    }
 
-    /* 🔥 토글 버튼 */
+    /* =========================
+      모바일 토글
+    ========================= */
     #toggleBar {
       display: none;
       position: absolute;
@@ -73,7 +139,9 @@
       border-radius: 8px;
     }
 
-    /* 🔥 모바일 UI */
+    /* =========================
+      모바일 최적화
+    ========================= */
     @media (max-width: 600px) {
 
       #toggleBar {
@@ -109,12 +177,14 @@
         width: 100%;
       }
     }
-
   </style>
 </head>
 
 <body>
 
+<!-- =========================
+  로그인
+========================= -->
 <div id="loginScreen">
   <h2>Parking Check</h2>
   <input id="email" placeholder="이메일">
@@ -123,21 +193,27 @@
   <div id="loginFooter">Made By MYUNGJIN</div>
 </div>
 
+<!-- =========================
+  인트로
+========================= -->
 <div id="intro">
   <h1>Parking Check</h1>
 </div>
 
-<!-- 🔥 모바일 토글 버튼 -->
+<!-- =========================
+  모바일 버튼
+========================= -->
 <button id="toggleBar" onclick="toggleBar()">☰</button>
 
+<!-- =========================
+  입력 UI
+========================= -->
 <div id="topBar">
   <div class="form-row">
 
-    <input id="inspector" placeholder="조사자명"
-      inputmode="text" autocomplete="off" lang="ko">
+    <input id="inspector" placeholder="조사자명" autocomplete="off" spellcheck="false">
 
-    <input id="carNumber" placeholder="차량번호"
-      inputmode="text" autocomplete="off" lang="ko">
+    <input id="carNumber" placeholder="차량번호" autocomplete="off" spellcheck="false">
 
     <select id="district">
       <option value="">행정구역</option>
@@ -167,13 +243,21 @@
   </div>
 </div>
 
+<!-- =========================
+  지도
+========================= -->
 <div id="map"></div>
 
+<!-- =========================
+  Kakao + Supabase
+========================= -->
 <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=d7b065e64cf74ac0b291af43de209b17&autoload=false"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 
+<!-- app.js -->
 <script src="app.js"></script>
 
+<!-- 토글 -->
 <script>
 function toggleBar() {
   document.getElementById("topBar").classList.toggle("open");
