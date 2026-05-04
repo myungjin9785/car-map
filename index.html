@@ -132,6 +132,28 @@
       height: 100vh;
     }
 
+    .my-location-dot {
+      width: 14px;
+      height: 14px;
+      background: black;
+      border: 2px solid white;
+      border-radius: 50%;
+      box-shadow: 0 0 0 2px rgba(0,0,0,0.25);
+      animation: blinkLocation 1s infinite ease-in-out;
+    }
+
+    @keyframes blinkLocation {
+      0%, 100% {
+        transform: scale(0.9);
+        opacity: 0.45;
+      }
+
+      50% {
+        transform: scale(1.25);
+        opacity: 1;
+      }
+    }
+
     #mobileHeader {
       display: none;
     }

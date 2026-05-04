@@ -26,6 +26,46 @@ let currentLat = null;
 let currentLng = null;
 
 // =========================
+// 자동 로그아웃
+// =========================
+const AUTO_LOGOUT_MS = 10 * 60 * 1000;
+const LOGIN_TIME_KEY = "carCheckLoginTime";
+let autoLogoutTimer = null;
+
+function clearAutoLogoutTimer() {
+  if (!autoLogoutTimer) return;
+  clearTimeout(autoLogoutTimer);
+  autoLogoutTimer = null;
+}
+
+async function forceAutoLogout() {
+  clearAutoLogoutTimer();
+  localStorage.removeItem(LOGIN_TIME_KEY);
+  await client.auth.signOut();
+  location.reload();
+}
+
+function startAutoLogoutTimer() {
+  clearAutoLogoutTimer();
+
+  let loginTime = Number(localStorage.getItem(LOGIN_TIME_KEY));
+
+  if (!loginTime) {
+    loginTime = Date.now();
+    localStorage.setItem(LOGIN_TIME_KEY, String(loginTime));
+  }
+
+  const remaining = AUTO_LOGOUT_MS - (Date.now() - loginTime);
+
+  if (remaining <= 0) {
+    forceAutoLogout();
+    return;
+  }
+
+  autoLogoutTimer = setTimeout(forceAutoLogout, remaining);
+}
+
+// =========================
 // 모바일 체크
 // =========================
 function isMobile() {
@@ -72,6 +112,7 @@ async function login() {
     return;
   }
 
+  localStorage.setItem(LOGIN_TIME_KEY, String(Date.now()));
   startApp();
 }
 
@@ -89,6 +130,8 @@ async function getUser() {
 function startApp() {
   if (appStarted) return;
   appStarted = true;
+
+  startAutoLogoutTimer();
 
   document.getElementById("loginScreen").style.display = "none";
 
@@ -191,10 +234,19 @@ function updateMyLocation(lat, lng, accuracy) {
   const pos = new kakao.maps.LatLng(lat, lng);
   map.setCenter(pos);
 
-  if (myLocationMarker) myLocationMarker.setMap(null);
+  if (!myLocationMarker) {
+    myLocationMarker = new kakao.maps.CustomOverlay({
+      position: pos,
+      content: '<div class="my-location-dot"></div>',
+      xAnchor: 0.5,
+      yAnchor: 0.5,
+      zIndex: 20
+    });
 
-  myLocationMarker = new kakao.maps.Marker({ position: pos });
-  myLocationMarker.setMap(map);
+    myLocationMarker.setMap(map);
+  } else {
+    myLocationMarker.setPosition(pos);
+  }
 
   drawRadiusCircle(lat, lng);
   drawAccuracyCircle(lat, lng, accuracy);
@@ -441,6 +493,9 @@ function addMarker(data) {
 // 로그아웃
 // =========================
 async function logout() {
+  clearAutoLogoutTimer();
+  localStorage.removeItem(LOGIN_TIME_KEY);
+
   await client.auth.signOut();
 
   if (myLocationWatchId) {
