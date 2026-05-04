@@ -132,6 +132,22 @@
       height: 100vh;
     }
 
+    #mobileHeader {
+      display: none;
+    }
+
+    #mobileTitle {
+      font-size: 18px;
+      font-weight: 700;
+      color: black;
+      background: white;
+      padding: 10px 14px;
+      border-radius: 8px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      line-height: 24px;
+      white-space: nowrap;
+    }
+
     #toggleBar {
       display: none;
       position: absolute;
@@ -147,8 +163,19 @@
     }
 
     @media (max-width: 600px) {
+      #mobileHeader {
+        display: flex;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 30;
+        align-items: center;
+        gap: 8px;
+      }
+
       #toggleBar {
         display: block;
+        position: static;
       }
 
       #topBar {
@@ -201,7 +228,10 @@
     <h1>Parking Check</h1>
   </div>
 
-  <button id="toggleBar" type="button" onclick="toggleBar()" aria-label="입력창 열기">☰</button>
+  <div id="mobileHeader">
+    <span id="mobileTitle">Parking Check</span>
+    <button id="toggleBar" type="button" onclick="toggleBar()" aria-label="입력창 열기">☰</button>
+  </div>
 
   <div id="topBar">
     <div class="form-row">
