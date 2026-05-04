@@ -150,10 +150,6 @@
 
     #toggleBar {
       display: none;
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 30;
       width: 44px;
       height: 44px;
       padding: 0;
@@ -167,15 +163,15 @@
         display: flex;
         position: absolute;
         top: 10px;
+        left: 10px;
         right: 10px;
         z-index: 30;
         align-items: center;
-        gap: 8px;
+        justify-content: space-between;
       }
 
       #toggleBar {
         display: block;
-        position: static;
       }
 
       #topBar {
