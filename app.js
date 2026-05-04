@@ -362,9 +362,11 @@ async function insertData(lat, lng) {
       lng: Number(lng)
     };
 
-    const { error } = await client
+    const { data, error } = await client
       .from("cars")
-      .insert([newData]);
+      .insert([newData])
+      .select()
+      .single();
 
     if (error) {
       console.error(error);
@@ -374,8 +376,18 @@ async function insertData(lat, lng) {
 
     alert("저장 완료");
 
-    const centerLat = currentLat ?? Number(lat);
-    const centerLng = currentLng ?? Number(lng);
+    const savedData = {
+      ...(data || newData),
+      lat: Number((data || newData).lat),
+      lng: Number((data || newData).lng)
+    };
+
+    const centerLat = currentLat ?? savedData.lat;
+    const centerLng = currentLng ?? savedData.lng;
+
+    if (getDistance(centerLat, centerLng, savedData.lat, savedData.lng) <= 500) {
+      addMarker(savedData);
+    }
 
     await loadMarkersNearby(centerLat, centerLng, true);
   } catch (err) {
@@ -414,7 +426,7 @@ function addMarker(data) {
   );
 
   const marker = new kakao.maps.Marker({
-    position: new kakao.maps.LatLng(data.lat, data.lng),
+    position: new kakao.maps.LatLng(Number(data.lat), Number(data.lng)),
     image: markerImage
   });
 
