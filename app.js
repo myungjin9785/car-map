@@ -6,6 +6,7 @@ const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let map;
 let mapInitialized = false;
+let appStarted = false;
 let markers = [];
 
 let myLocationMarker = null;
@@ -20,6 +21,9 @@ let lastLoadLocation = null;
 let selectedLat = null;
 let selectedLng = null;
 let selectedMarker = null;
+
+let currentLat = null;
+let currentLng = null;
 
 // =========================
 // 모바일 체크
@@ -36,7 +40,7 @@ async function login() {
   const password = document.getElementById("password").value.trim();
 
   if (!email || !password) {
-    alert("이메일과 비밀번호 입력");
+    alert("이메일과 비밀번호를 입력하세요");
     return;
   }
 
@@ -50,15 +54,21 @@ async function login() {
     return;
   }
 
-  const { data: allowedUser } = await client
+  const { data: allowedUser, error: allowedError } = await client
     .from("allowed_users")
     .select("email")
     .ilike("email", data.user.email)
     .maybeSingle();
 
+  if (allowedError) {
+    console.error(allowedError);
+    alert("사용자 확인 중 오류가 발생했습니다");
+    return;
+  }
+
   if (!allowedUser) {
     await client.auth.signOut();
-    alert("허용되지 않은 사용자");
+    alert("허용되지 않은 사용자입니다");
     return;
   }
 
@@ -77,6 +87,9 @@ async function getUser() {
 // 시작
 // =========================
 function startApp() {
+  if (appStarted) return;
+  appStarted = true;
+
   document.getElementById("loginScreen").style.display = "none";
 
   const intro = document.getElementById("intro");
@@ -127,8 +140,8 @@ function getStableLocation(lat, lng) {
   if (locationBuffer.length > 5) locationBuffer.shift();
 
   return {
-    lat: locationBuffer.reduce((s, p) => s + Number(p.lat), 0) / locationBuffer.length,
-    lng: locationBuffer.reduce((s, p) => s + Number(p.lng), 0) / locationBuffer.length
+    lat: locationBuffer.reduce((sum, p) => sum + Number(p.lat), 0) / locationBuffer.length,
+    lng: locationBuffer.reduce((sum, p) => sum + Number(p.lng), 0) / locationBuffer.length
   };
 }
 
@@ -142,8 +155,8 @@ function drawRadiusCircle(lat, lng) {
     center: new kakao.maps.LatLng(lat, lng),
     radius: 500,
     strokeWeight: 2,
-    strokeColor: '#007BFF',
-    fillColor: '#007BFF',
+    strokeColor: "#007BFF",
+    fillColor: "#007BFF",
     fillOpacity: 0.15
   });
 
@@ -160,8 +173,8 @@ function drawAccuracyCircle(lat, lng, accuracy) {
     center: new kakao.maps.LatLng(lat, lng),
     radius: accuracy,
     strokeWeight: 1,
-    strokeColor: '#00C853',
-    fillColor: '#00C853',
+    strokeColor: "#00C853",
+    fillColor: "#00C853",
     fillOpacity: 0.1
   });
 
@@ -172,6 +185,9 @@ function drawAccuracyCircle(lat, lng, accuracy) {
 // 내 위치
 // =========================
 function updateMyLocation(lat, lng, accuracy) {
+  currentLat = lat;
+  currentLng = lng;
+
   const pos = new kakao.maps.LatLng(lat, lng);
   map.setCenter(pos);
 
@@ -187,10 +203,8 @@ function updateMyLocation(lat, lng, accuracy) {
 // =========================
 // 마커 로드
 // =========================
-async function loadMarkersNearby(lat, lng) {
-
-  // 너무 자주 호출 방지
-  if (lastLoadLocation) {
+async function loadMarkersNearby(lat, lng, force = false) {
+  if (!force && lastLoadLocation) {
     const dist = getDistance(lat, lng, lastLoadLocation.lat, lastLoadLocation.lng);
     if (dist < 30) return;
   }
@@ -206,20 +220,19 @@ async function loadMarkersNearby(lat, lng) {
     return;
   }
 
-  markers.forEach(m => m.setMap(null));
+  markers.forEach(marker => marker.setMap(null));
   markers = [];
 
   if (!data) return;
 
   data
-    .filter(d => d.lat && d.lng)
-    .map(d => ({
-      ...d,
-      lat: Number(d.lat),
-      lng: Number(d.lng)
+    .filter(item => item.lat && item.lng)
+    .map(item => ({
+      ...item,
+      lat: Number(item.lat),
+      lng: Number(item.lng)
     }))
-    // 👉 필요하면 주석 해제 (500m 필터)
-    //.filter(d => getDistance(lat, lng, d.lat, d.lng) <= 500)
+    .filter(item => getDistance(lat, lng, item.lat, item.lng) <= 500)
     .forEach(addMarker);
 }
 
@@ -227,12 +240,13 @@ async function loadMarkersNearby(lat, lng) {
 // 위치 추적
 // =========================
 function startTracking() {
-
-  if (!navigator.geolocation) return;
+  if (!navigator.geolocation) {
+    alert("이 브라우저에서는 위치 기능을 사용할 수 없습니다");
+    return;
+  }
 
   myLocationWatchId = navigator.geolocation.watchPosition(
     (pos) => {
-
       const accuracy = pos.coords.accuracy;
 
       if (!firstFix) firstFix = true;
@@ -245,9 +259,11 @@ function startTracking() {
 
       updateMyLocation(stable.lat, stable.lng, accuracy);
       loadMarkersNearby(stable.lat, stable.lng);
-
     },
-    (err) => console.log("GPS 실패:", err),
+    (err) => {
+      console.error("GPS 실패:", err);
+      alert("현재 위치를 가져오지 못했습니다");
+    },
     {
       enableHighAccuracy: true,
       maximumAge: 0,
@@ -260,7 +276,6 @@ function startTracking() {
 // 지도 초기화
 // =========================
 async function initMap() {
-
   const user = await getUser();
   if (!user || mapInitialized) return;
 
@@ -271,12 +286,11 @@ async function initMap() {
 
   mapInitialized = true;
 
-  loadMarkersNearby(35.8714, 128.6014);
+  loadMarkersNearby(35.8714, 128.6014, true);
   startTracking();
 
   if (!isMobile()) {
-    kakao.maps.event.addListener(map, 'click', function(mouseEvent) {
-
+    kakao.maps.event.addListener(map, "click", function(mouseEvent) {
       selectedLat = mouseEvent.latLng.getLat();
       selectedLng = mouseEvent.latLng.getLng();
 
@@ -295,29 +309,33 @@ async function initMap() {
 // 저장
 // =========================
 async function saveData() {
-
   const inspector = document.getElementById("inspector").value.trim();
   const carNumber = document.getElementById("carNumber").value.trim();
   const district = document.getElementById("district").value;
 
   if (!inspector || !carNumber || !district) {
-    alert("필수 입력");
+    alert("조사자명, 차량번호, 행정구역은 필수입니다");
     return;
   }
 
-  if (!isMobile() && selectedLat != null && selectedLng != null) {
-    insertData(selectedLat, selectedLng);
+  if (!isMobile() && selectedLat !== null && selectedLng !== null) {
+    await insertData(selectedLat, selectedLng);
     resetClick();
     return;
   }
 
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      insertData(pos.coords.latitude, pos.coords.longitude);
+    async (pos) => {
+      await insertData(pos.coords.latitude, pos.coords.longitude);
     },
     (err) => {
       console.error(err);
-      alert("위치 못 가져옴");
+      alert("위치를 가져오지 못했습니다");
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10000
     }
   );
 }
@@ -326,12 +344,11 @@ async function saveData() {
 // DB 저장
 // =========================
 async function insertData(lat, lng) {
-
   try {
     const user = await getUser();
 
     if (!user) {
-      alert("로그인 필요");
+      alert("로그인이 필요합니다");
       return;
     }
 
@@ -357,8 +374,11 @@ async function insertData(lat, lng) {
     }
 
     alert("저장 완료");
-    loadMarkersNearby(lat, lng);
 
+    const centerLat = currentLat ?? Number(lat);
+    const centerLng = currentLng ?? Number(lng);
+
+    await loadMarkersNearby(centerLat, centerLng, true);
   } catch (err) {
     console.error(err);
     alert("오류: " + err.message);
@@ -366,7 +386,7 @@ async function insertData(lat, lng) {
 }
 
 // =========================
-// 초기화
+// 클릭 위치 초기화
 // =========================
 function resetClick() {
   selectedLat = null;
@@ -382,15 +402,21 @@ function resetClick() {
 // 마커
 // =========================
 function addMarker(data) {
+  const legal = String(data.legal || "").trim();
 
   const imageSrc =
-    data.legal === "불법"
-      ? "/images/red.png"
-      : "/images/blue.png";
+    legal === "불법"
+      ? "images/red.png"
+      : "images/blue.png";
+
+  const markerImage = new kakao.maps.MarkerImage(
+    imageSrc,
+    new kakao.maps.Size(24, 35)
+  );
 
   const marker = new kakao.maps.Marker({
     position: new kakao.maps.LatLng(data.lat, data.lng),
-    image: new kakao.maps.MarkerImage(imageSrc, new kakao.maps.Size(24, 35))
+    image: markerImage
   });
 
   marker.setMap(map);
