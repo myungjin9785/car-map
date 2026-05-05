@@ -31,7 +31,7 @@ let currentLng = null;
 // 자동 로그아웃
 // =========================
 const AUTO_LOGOUT_MS = 10 * 60 * 1000;
-const LOGIN_TIME_KEY = "carCheckLoginTime";
+const LOGIN_TIME_KEY = "parkingTracerLoginTime";
 const DISTRICT_GEOJSON_URL = "data/districts.geojson";
 
 const DAEGU_DISTRICT_NAMES = {
