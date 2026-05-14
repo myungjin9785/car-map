@@ -687,9 +687,9 @@ function addMarker(data) {
 
   const markerImage = new kakao.maps.MarkerImage(
     imageSrc,
-    new kakao.maps.Size(12, 18),
+    new kakao.maps.Size(6, 6),
     {
-      offset: new kakao.maps.Point(6, 18)
+      offset: new kakao.maps.Point(3, 3)
     }
   );
 
